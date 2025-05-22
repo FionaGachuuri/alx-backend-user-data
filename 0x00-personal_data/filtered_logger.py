@@ -6,6 +6,10 @@ from log messages using regular expressions.
 import re
 from typing import List
 import logging
+import mysql.connector
+import os
+from dotenv import load_dotenv
+load_dotenv()
 
 
 def filter_datum(fields: List[str], redaction: str,
@@ -81,3 +85,14 @@ def get_logger() -> logging.Logger:
     filter_logger.addHandler(handler)
     return filter_logger
 PII_FIELDS = ('name', 'email', 'address', 'ssn', 'password')
+
+def get_db():
+    """
+    Returns a connection to the database.
+    """
+    return mysql.connector.connect(
+        host=os.getenv("PERSONAL_DATA_DB_HOST"),
+        user=os.getenv("PERSONAL_DATA_DB_USERNAME"),
+        password=os.getenv("PERSONAL_DATA_DB_PASSWORD"),
+        database=os.getenv("PERSONAL_DATA_DB_NAME")
+    )
