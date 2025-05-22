@@ -4,9 +4,10 @@ Module that provides a function to filter sensitive data
 from log messages using regular expressions.
 """
 import re
-from typing import List
+from typing import List, Optional
 import logging
 import mysql.connector
+from mysql.connector.connection import MySQLConnection
 import os
 from dotenv import load_dotenv
 load_dotenv()
@@ -90,14 +91,34 @@ def get_logger() -> logging.Logger:
 PII_FIELDS = ('name', 'email', 'address',
               'ssn', 'password')
 
-
-def get_db() -> mysql.connector.connection.MySQLConnection:
+def get_db() -> MySQLConnection:
     """
-    Returns a connection to the database.
+    Connect to MySQL database
     """
+    user: str = os.environ.get("PERSONAL_DATA_DB_USERNAME", "root")
+    password: str = os.environ.get("PERSONAL_DATA_DB_PASSWORD", "")
+    host: str = os.environ.get("PERSONAL_DATA_DB_HOST", "localhost")
+    database: Optional[str] = os.environ.get("PERSONAL_DATA_DB_NAME")
     return mysql.connector.connect(
-        host=os.getenv("PERSONAL_DATA_DB_HOST"),
-        user=os.getenv("PERSONAL_DATA_DB_USERNAME"),
-        password=os.getenv("PERSONAL_DATA_DB_PASSWORD"),
-        database=os.getenv("PERSONAL_DATA_DB_NAME")
+        user=user,
+        password=password,
+        host=host,
+        database=database
     )
+def main() -> None:
+    """Main entry"""
+    db = get_db()
+    cursor = db.cursor()
+    cursor.execute("SELECT * FROM users;")
+    logger: logging.Logger = get_logger()
+    MESSAGE: str = "name={}; email={}; phone={}; ssn={}; password={}; ip={}; \
+                    last_login={}; user_agent={};"
+    for row in cursor:
+        logger.info(MESSAGE.format(row[0], row[1], row[2], row[3], row[4],
+                                   row[5], row[6], row[7]))
+    cursor.close()
+    db.close()
+
+
+if __name__ == "__main__":
+    main()
