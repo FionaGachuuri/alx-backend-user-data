@@ -81,12 +81,17 @@ def get_logger() -> logging.Logger:
     filter_logger.propagate = False
     filter_logger.setLevel(logging.INFO)
     handler = logging.StreamHandler()
-    handler.setFormatter(RedactingFormatter(fields=["email", "ssn", "password"]))
+    handler.setFormatter(RedactingFormatter(fields=["email",
+                                                    "ssn", "password"]))
     filter_logger.addHandler(handler)
     return filter_logger
-PII_FIELDS = ('name', 'email', 'address', 'ssn', 'password')
 
-def get_db():
+
+PII_FIELDS = ('name', 'email', 'address',
+              'ssn', 'password')
+
+
+def get_db() -> mysql.connector.connection.MySQLConnection:
     """
     Returns a connection to the database.
     """
