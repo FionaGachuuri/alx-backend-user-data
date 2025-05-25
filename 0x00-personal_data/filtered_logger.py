@@ -13,24 +13,6 @@ from dotenv import load_dotenv
 load_dotenv()
 
 
-def filter_datum(fields: List[str], redaction: str,
-                 message: str, separator: str) -> str:
-    """
-    Obfuscates the values of specified fields within a log message.
-
-    Args:
-        fields: List of fields to obfuscate.
-        redaction: The string to replace sensitive values with.
-        message: The original log message.
-        separator: The character separating the fields in the message.
-
-    Returns:
-        The log message with specified fields obfuscated.
-    """
-    return re.sub(rf'({"|".join(fields)})=.*?{separator}',
-                  lambda m: f"{m.group(1)}={redaction}{separator}", message)
-
-
 class RedactingFormatter(logging.Formatter):
     """
     Redacting Formatter class
@@ -67,6 +49,44 @@ class RedactingFormatter(logging.Formatter):
                             message, self.SEPARATOR)
 
 
+PII_FIELDS = ('name', 'email', 'address',
+              'ssn', 'password')
+
+
+def get_db() -> MySQLConnection:
+    """
+    Connect to MySQL database
+    """
+    user: str = os.environ.get("PERSONAL_DATA_DB_USERNAME", "root")
+    password: str = os.environ.get("PERSONAL_DATA_DB_PASSWORD", "")
+    host: str = os.environ.get("PERSONAL_DATA_DB_HOST", "localhost")
+    database: Optional[str] = os.environ.get("PERSONAL_DATA_DB_NAME")
+    return mysql.connector.connect(
+        user=user,
+        password=password,
+        host=host,
+        database=database
+    )
+
+
+def filter_datum(fields: List[str], redaction: str,
+                 message: str, separator: str) -> str:
+    """
+    Obfuscates the values of specified fields within a log message.
+
+    Args:
+        fields: List of fields to obfuscate.
+        redaction: The string to replace sensitive values with.
+        message: The original log message.
+        separator: The character separating the fields in the message.
+
+    Returns:
+        The log message with specified fields obfuscated.
+    """
+    return re.sub(rf'({"|".join(fields)})=.*?{separator}',
+                  lambda m: f"{m.group(1)}={redaction}{separator}", message)
+
+
 def get_logger() -> logging.Logger:
     """
     Returns a logger object configured with the RedactingFormatter.
@@ -88,23 +108,6 @@ def get_logger() -> logging.Logger:
     return filter_logger
 
 
-PII_FIELDS = ('name', 'email', 'address',
-              'ssn', 'password')
-
-def get_db() -> MySQLConnection:
-    """
-    Connect to MySQL database
-    """
-    user: str = os.environ.get("PERSONAL_DATA_DB_USERNAME", "root")
-    password: str = os.environ.get("PERSONAL_DATA_DB_PASSWORD", "")
-    host: str = os.environ.get("PERSONAL_DATA_DB_HOST", "localhost")
-    database: Optional[str] = os.environ.get("PERSONAL_DATA_DB_NAME")
-    return mysql.connector.connect(
-        user=user,
-        password=password,
-        host=host,
-        database=database
-    )
 def main() -> None:
     """Main entry"""
     db = get_db()
